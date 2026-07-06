@@ -55,27 +55,23 @@ qapi_all_modules = [
   'virtio',
   'yank',
 ]
-if have_system
-  qapi_all_modules += [
-    'accelerator',
-    'acpi',
-    'acpi-hest',
-    'audio',
-    'cryptodev',
-    'qdev',
-    'pci',
-    'rocker',
-    'misc-arm',
-    'misc-i386',
-    'tpm',
-    'uefi',
-  ]
-endif
-if have_system or have_tools
+qapi_all_modules += [
+  'accelerator',
+  'acpi',
+  'acpi-hest',
+  'audio',
+  'cryptodev',
+  'qdev',
+  'pci',
+  'rocker',
+  'misc-arm',
+  'misc-i386',
+  'tpm',
+  'uefi',
+]
   qapi_all_modules += [
     'ui',
   ]
-endif
 
 qapi_nonmodule_outputs = [
   'qapi-introspect.c', 'qapi-introspect.h',

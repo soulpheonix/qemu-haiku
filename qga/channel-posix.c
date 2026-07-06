@@ -137,7 +137,9 @@ static gboolean ga_channel_open(GAChannel *c, const gchar *path,
         fd = qga_open_cloexec(
             path,
 #ifndef CONFIG_SOLARIS
+#ifndef __HAIKU__
             O_ASYNC |
+#endif
 #endif
             O_RDWR | O_NONBLOCK,
             0
@@ -193,8 +195,11 @@ static gboolean ga_channel_open(GAChannel *c, const gchar *path,
         tcgetattr(fd, &tio);
         /* set up serial port for non-canonical, dumb byte streaming */
         tio.c_iflag &= ~(IGNBRK | BRKINT | IGNPAR | PARMRK | INPCK | ISTRIP |
-                         INLCR | IGNCR | ICRNL | IXON | IXOFF | IXANY |
-                         IMAXBEL);
+                         INLCR | IGNCR | ICRNL | IXON | IXOFF | IXANY
+#ifndef __HAIKU__
+	                     | IMAXBEL
+#endif
+	                     );
         tio.c_oflag = 0;
         tio.c_lflag = 0;
         tio.c_cflag |= GA_CHANNEL_BAUDRATE_DEFAULT;

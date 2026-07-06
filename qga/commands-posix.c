@@ -294,7 +294,12 @@ void qmp_guest_set_time(bool has_time, int64_t time_ns, Error **errp)
 {
     int ret;
     Error *local_err = NULL;
+// haiku does not support `settimeofday` so `clock_settime` is used instead
+#ifdef __HAIKU__
+	struct timespec tv;
+#else
     struct timeval tv;
+#endif
     const char *argv[] = {"/sbin/hwclock", has_time ? "-w" : "-s", NULL};
 
     /* If user has passed a time, validate and set it. */
@@ -307,6 +312,17 @@ void qmp_guest_set_time(bool has_time, int64_t time_ns, Error **errp)
             return;
         }
 
+#ifdef __HAIKU__
+        tv.tv_sec = time_ns / 1000000000;
+        tv.tv_nsec = time_ns % 1000000000;
+        g_date_set_time_t(&date, tv.tv_sec);
+        if (date.year < 1970 || date.year >= 2070) {
+            error_setg_errno(errp, errno, "Invalid time");
+            return;
+        }
+
+		ret = clock_settime(CLOCK_REALTIME, &tv);
+#else
         tv.tv_sec = time_ns / 1000000000;
         tv.tv_usec = (time_ns % 1000000000) / 1000;
         g_date_set_time_t(&date, tv.tv_sec);
@@ -316,6 +332,7 @@ void qmp_guest_set_time(bool has_time, int64_t time_ns, Error **errp)
         }
 
         ret = settimeofday(&tv, NULL);
+#endif
         if (ret < 0) {
             error_setg_errno(errp, errno, "Failed to set time to guest");
             return;

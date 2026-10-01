@@ -185,6 +185,9 @@ static gboolean ga_channel_open(GAChannel *c, const gchar *path,
     }
     case GA_CHANNEL_ISA_SERIAL: {
         struct termios tio;
+#ifdef __HAIKU__
+        int fflags;
+#endif /* __HAIKU__ */
 
         assert(fd < 0);
         fd = qga_open_cloexec(path, O_RDWR | O_NOCTTY | O_NONBLOCK, 0);
@@ -192,13 +195,21 @@ static gboolean ga_channel_open(GAChannel *c, const gchar *path,
             error_setg_errno(errp, errno, "error opening channel '%s'", path);
             return false;
         }
+
+#ifdef __HAIKU__
+		// on haiku, serial devices always open as blocking due to a bug.
+		// (see https://dev.haiku-os.org/ticket/8789)
+        fflags = fcntl(fd, F_GETFL);
+		fcntl(fd, F_SETFL, fflags | O_NONBLOCK);
+#endif /* __HAIKU__ */
+
         tcgetattr(fd, &tio);
         /* set up serial port for non-canonical, dumb byte streaming */
         tio.c_iflag &= ~(IGNBRK | BRKINT | IGNPAR | PARMRK | INPCK | ISTRIP |
                          INLCR | IGNCR | ICRNL | IXON | IXOFF | IXANY
 #ifndef __HAIKU__
 	                     | IMAXBEL
-#endif
+#endif /* __HAIKU__ */
 	                     );
         tio.c_oflag = 0;
         tio.c_lflag = 0;
